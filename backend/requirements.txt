@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+sqlalchemy
+openai
+python-dotenv
+pandas
+numpy
+torch
+

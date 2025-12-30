@@ -1,0 +1,38 @@
+{
+  "name": "lma-pulse-desktop",
+  "version": "1.0.0",
+  "description": "LMA Pulse - Covenant Monitoring Desktop Application",
+  "main": "electron.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "electron": "electron .",
+    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\""
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.10.0",
+    "axios": "^1.6.0",
+    "lucide-react": "^0.294.0",
+    "date-fns": "^2.30.0"
+  },
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "concurrently": "^8.2.0",
+    "wait-on": "^7.0.0",
+    "react-scripts": "5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

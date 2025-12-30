@@ -1,0 +1,167 @@
+.legal-generator {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+.generator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #1e293b;
+}
+
+.generator-header h2 {
+    font-size: 1.5rem;
+}
+
+.generator-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.doc-type-btn {
+    padding: 0.5rem 1.25rem;
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.doc-type-btn:hover:not(:disabled) {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.doc-type-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.doc-type-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.generating-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    gap: 1rem;
+}
+
+.spinner-icon {
+    animation: spin 1s linear infinite;
+}
+
+.document-preview {
+    margin-bottom: 2rem;
+}
+
+.document-metadata {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem;
+    background: rgba(51, 65, 85, 0.2);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.metadata-item {
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.metadata-item strong {
+    color: #e2e8f0;
+    margin-right: 0.5rem;
+}
+
+.document-text {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 2rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.document-text pre {
+    white-space: pre-wrap;
+    font-family: 'Georgia', serif;
+    line-height: 1.8;
+    font-size: 0.95rem;
+    color: #e2e8f0;
+}
+
+.document-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.action-btn.download {
+    background: #3b82f6;
+    color: white;
+}
+
+.action-btn.download:hover {
+    background: #2563eb;
+}
+
+.action-btn.send {
+    background: #10b981;
+    color: white;
+}
+
+.action-btn.send:hover {
+    background: #059669;
+}
+
+.action-btn.secondary {
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+}
+
+.action-btn.secondary:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.legal-generator-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    gap: 1rem;
+}
+
+.legal-generator-empty p {
+    color: #64748b;
+    font-size: 1rem;
+}
