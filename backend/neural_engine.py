@@ -51,7 +51,13 @@ def initialize_lma_pulse_model():
     # User said: model = UPA.initializePB(base_model)
     
     try:
-        model = UPA.initializePB(base_model)
+        # Use initialize_pai as initializePB seems to be incorrect or deprecated
+        if hasattr(UPA, 'initializePB'):
+             model = UPA.initializePB(base_model)
+        else:
+             print("UPA.initializePB not found, using UPA.initialize_pai")
+             model = UPA.initialize_pai(base_model)
+        
         print("LMA Pulse: Dendritic Intelligence successfully integrated via Strategy 1.")
         return model
     except Exception as e:
