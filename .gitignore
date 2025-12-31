@@ -52,3 +52,4 @@ Thumbs.db
 # Forecast Artifacts
 forecast_run_*/
 PAI/
+*.pth

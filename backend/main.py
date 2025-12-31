@@ -11,8 +11,13 @@ from covenant_engine import CovenantEngine
 from ai_engine import LMALegalEngine
 from mock_erp import MockERPConnector
 from forecasting import forecaster
+from neural_engine import CovenantMonitor, train_model
+import os
 
 app = FastAPI(title="LMA Pulse API", version="1.0.0")
+
+# Global Monitor Instance
+covenant_monitor = None
 
 # CORS for Electron app
 app.add_middleware(
@@ -26,8 +31,21 @@ app.add_middleware(
 # Initialize database on startup
 @app.on_event("startup")
 def startup_event():
+    global covenant_monitor
     init_db()
-    # Train forecasting model on mock data
+    
+    # 1. Train/Load Dendritic Covenant Model
+    if not os.path.exists("covenant_breach_model.pth"):
+        print("Training Dendritic Covenant Model...")
+        try:
+            train_model()
+            print("Dendritic Model Trained Successfully.")
+        except Exception as e:
+            print(f"Failed to train Dendritic Model: {e}")
+            
+    covenant_monitor = CovenantMonitor("covenant_breach_model.pth")
+    
+    # 2. Train Forecasting Model
     try:
         print("Training PerforatedAI Forecasting Model...")
         history = MockERPConnector.generate_historical_data(24)
@@ -161,6 +179,38 @@ def get_financial_forecast(months: int = 3):
     """Get financial forecast using PerforatedAI augmented model"""
     latest = MockERPConnector.get_latest_metrics()
     return forecaster.predict_next_months(latest, months)
+
+@app.get("/covenants/predict-risk")
+def predict_breach_risk(borrower_id: str = "BOR_SOLARIS_001"):
+    """
+    Predict covenant breach risk using the Dendritic Neural Network.
+    Returns probabilities for 1/7/30/90 days.
+    """
+    if not covenant_monitor:
+        raise HTTPException(status_code=503, detail="AI Model not initialized")
+        
+    latest = MockERPConnector.get_latest_metrics(borrower_id)
+    profile = MockERPConnector.get_profile(borrower_id)
+    
+    # Convert financial metric to model input format
+    # The model expects raw floats, MockERP returns FinancialMetric object
+    # We map fields. Note: Model input vector is flexible in our wrapper.
+    
+    risk_assessment = covenant_monitor.predict_breach_risk(
+        borrower_name=profile["name"],
+        ebitda=latest.ebitda / 1_000_000, # Normalize to Millions for model stability
+        revenue=latest.revenue / 1_000_000,
+        total_debt=latest.total_debt / 1_000_000,
+        cash_flow=latest.cash_flow / 1_000_000,
+        current_assets=(latest.total_debt * 0.4) / 1_000_000, # Mock derived
+        current_liabilities=(latest.total_debt * 0.3) / 1_000_000, # Mock derived
+        interest_expense=latest.interest_expense / 1_000_000,
+        capex=latest.capex / 1_000_000,
+        industry="Energy", # In production, this would come from profile
+        loan_type="Term"
+    )
+    
+    return risk_assessment
 
 @app.post("/financial/simulate", response_model=SimulationResult)
 def simulate_financials(params: SimulationParams):
