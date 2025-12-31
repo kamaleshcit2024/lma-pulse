@@ -1,0 +1,99 @@
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.slider-label {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+}
+
+.slider {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 6px;
+    background: #333;
+    border-radius: 5px;
+    outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #00f260;
+    cursor: pointer;
+}
+
+.comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.result-metric .label {
+    display: block;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.result-metric .values {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: monospace;
+    font-size: 1.1rem;
+}
+
+.result-metric .arrow {
+    color: #666;
+}
+
+.new.negative {
+    color: #ff5f5f;
+}
+
+.covenant-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.covenant-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-radius: 4px;
+    background: #1a1a1a;
+    font-size: 0.9rem;
+}
+
+.covenant-item.breach {
+    border-left: 3px solid #ff5f5f;
+    background: rgba(255, 95, 95, 0.1);
+}
+
+.covenant-item.compliant {
+    border-left: 3px solid #00f260;
+}
+
+.text-danger {
+    color: #ff5f5f;
+}
+
+.text-success {
+    color: #00f260;
+}
+
+.text-warning {
+    color: #ffbd2e;
+}

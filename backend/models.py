@@ -54,4 +54,12 @@ class BorrowerProfile(BaseModel):
     facility_currency: str
     agent_bank: str
     origination_date: datetime
-    maturity_date: datetime
+
+class SimulationParams(BaseModel):
+    revenue_change_pct: float = 0.0
+    interest_rate_change_bps: float = 0.0
+
+class SimulationResult(BaseModel):
+    base_metrics: FinancialMetric
+    stressed_metrics: FinancialMetric
+    covenant_results: List[CovenantTest]

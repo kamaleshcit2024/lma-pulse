@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { AlertTriangle, TrendingUp, DollarSign, FileText } from 'lucide-react';
+import { AlertTriangle, TrendingUp, DollarSign, FileText, Search } from 'lucide-react';
 import apiService from '../services/api';
 import Forecaster from './Forecaster';
 import './Dashboard.css';
 
 const Dashboard = () => {
+    // Borrower State
+    const [borrowerId, setBorrowerId] = useState("BOR_SOLARIS_001");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [showResults, setShowResults] = useState(false);
+
+    // Dashboard Data
     const [borrowerProfile, setBorrowerProfile] = useState(null);
     const [financialHistory, setFinancialHistory] = useState([]);
     const [latestMetrics, setLatestMetrics] = useState(null);
@@ -19,16 +26,18 @@ const Dashboard = () => {
         // Real-time polling every 30 seconds
         const interval = setInterval(loadDashboardData, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [borrowerId]); // Reload when borrowerId changes
 
     const loadDashboardData = async () => {
+        console.log("Loading dashboard data for:", borrowerId);
+        setLoading(true);
         try {
             const [profile, history, latest, tests, alertsData] = await Promise.all([
-                apiService.getBorrowerProfile(),
-                apiService.getFinancialHistory(12),
-                apiService.getLatestFinancials(),
-                apiService.testCovenants(),
-                apiService.getActiveAlerts(),
+                apiService.getBorrowerProfile(borrowerId),
+                apiService.getFinancialHistory(12, borrowerId),
+                apiService.getLatestFinancials(borrowerId),
+                apiService.testCovenants(borrowerId),
+                apiService.getActiveAlerts(borrowerId),
             ]);
 
             setBorrowerProfile(profile.data);
@@ -41,6 +50,33 @@ const Dashboard = () => {
             console.error('Dashboard load error:', error);
             setLoading(false);
         }
+    };
+
+    const handleSearch = async (e) => {
+        const query = e.target.value;
+        console.log("Search query changed:", query);
+        setSearchQuery(query);
+        // Removing the automatic search on type for now to isolate the issue? 
+        // No, let's keep it but log it.
+        if (query.length > 2) {
+            try {
+                const res = await apiService.searchBorrowers(query);
+                console.log("Auto-search results:", res.data);
+                setSearchResults(res.data);
+                setShowResults(true);
+            } catch (err) {
+                console.error("Search error:", err);
+            }
+        } else {
+            setShowResults(false);
+        }
+    };
+
+    const selectBorrower = (id) => {
+        console.log("Selecting borrower:", id);
+        setBorrowerId(id);
+        setSearchQuery("");
+        setShowResults(false);
     };
 
     if (loading) {
@@ -62,6 +98,32 @@ const Dashboard = () => {
     const currentLeverage = latestMetrics ?
         (latestMetrics.total_debt / latestMetrics.ebitda).toFixed(2) : 0;
 
+    const executeSearch = async () => {
+        console.log("Execute search with:", searchQuery);
+        if (searchQuery.length > 2) {
+            try {
+                const res = await apiService.searchBorrowers(searchQuery);
+                console.log("Execute search results:", res.data);
+                setSearchResults(res.data);
+                setShowResults(true);
+
+                // UX Improvement: If results are found, automatically select the first one.
+                // This fulfills the "I clicked search and it changed" expectation.
+                if (res.data.length > 0) {
+                    selectBorrower(res.data[0].borrower_id);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            executeSearch();
+        }
+    };
+
     return (
         <div className="dashboard">
             {/* Header */}
@@ -70,6 +132,38 @@ const Dashboard = () => {
                     <h1>LMA PULSE</h1>
                     <p className="subtitle">Real-Time Covenant Monitoring</p>
                 </div>
+
+                {/* Search Bar */}
+                <div className="header-search">
+                    <div className="search-input-wrapper">
+                        <input
+                            type="text"
+                            placeholder="Search Borrower (e.g. Apex)"
+                            value={searchQuery}
+                            onChange={handleSearch}
+                            onKeyDown={handleKeyDown}
+                            className="search-input"
+                        />
+                        <button className="search-button" onClick={executeSearch}>
+                            <Search size={20} />
+                        </button>
+                    </div>
+                    {showResults && (
+                        <div className="search-dropdown">
+                            {searchResults.map(b => (
+                                <div
+                                    key={b.borrower_id}
+                                    className="search-result-item"
+                                    onClick={() => selectBorrower(b.borrower_id)}
+                                >
+                                    <strong>{b.name}</strong>
+                                    <small>{b.borrower_id}</small>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 <div className="header-borrower">
                     <h2>{borrowerProfile?.name}</h2>
                     <p className="facility-details">

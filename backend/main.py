@@ -44,21 +44,26 @@ def startup_event():
 def root():
     return {"message": "LMA Pulse API - Covenant Monitoring System", "version": "1.0.0"}
 
+@app.get("/borrowers/search")
+def search_borrowers(q: str = ""):
+    """Search for borrowers by name or ID"""
+    return MockERPConnector.search_borrowers(q)
+
 @app.get("/borrower/profile", response_model=BorrowerProfile)
-def get_borrower_profile():
-    """Get the borrower profile for Solaris Energy"""
-    profile = MockERPConnector.BORROWER_PROFILE
+def get_borrower_profile(borrower_id: str = "BOR_SOLARIS_001"):
+    """Get the borrower profile"""
+    profile = MockERPConnector.get_profile(borrower_id)
     return BorrowerProfile(**profile)
 
 @app.get("/financial/latest", response_model=FinancialMetric)
-def get_latest_financials():
+def get_latest_financials(borrower_id: str = "BOR_SOLARIS_001"):
     """Get the latest financial metrics from the ERP system"""
-    return MockERPConnector.get_latest_metrics()
+    return MockERPConnector.get_latest_metrics(borrower_id)
 
 @app.get("/financial/history", response_model=List[FinancialMetric])
-def get_financial_history(months: int = 12):
+def get_financial_history(months: int = 12, borrower_id: str = "BOR_SOLARIS_001"):
     """Get historical financial data"""
-    return MockERPConnector.generate_historical_data(months)
+    return MockERPConnector.generate_historical_data(months, borrower_id)
 
 @app.get("/covenants/list", response_model=List[Covenant])
 def get_covenants():
@@ -66,22 +71,22 @@ def get_covenants():
     return CovenantEngine.STANDARD_COVENANTS
 
 @app.post("/covenants/test", response_model=List[CovenantTest])
-def test_covenants():
+def test_covenants(borrower_id: str = "BOR_SOLARIS_001"):
     """
     Test all covenants against latest financial data.
     This is the core monitoring function.
     """
-    latest_metrics = MockERPConnector.get_latest_metrics()
+    latest_metrics = MockERPConnector.get_latest_metrics(borrower_id)
     results = CovenantEngine.test_all_covenants(latest_metrics)
     return results
 
 @app.post("/legal/generate-reservation", response_model=LegalDocument)
-def generate_reservation_of_rights(breach: CovenantTest):
+def generate_reservation_of_rights(breach: CovenantTest, borrower_id: str = "BOR_SOLARIS_001"):
     """
     Generate a Reservation of Rights letter for a covenant breach.
     This is the AI magic.
     """
-    borrower = MockERPConnector.BORROWER_PROFILE
+    borrower = MockERPConnector.get_profile(borrower_id)
     
     # Find the covenant details
     covenant = next(
@@ -109,9 +114,9 @@ def generate_reservation_of_rights(breach: CovenantTest):
     )
 
 @app.post("/legal/generate-waiver-template", response_model=LegalDocument)
-def generate_waiver_template(breach: CovenantTest):
+def generate_waiver_template(breach: CovenantTest, borrower_id: str = "BOR_SOLARIS_001"):
     """Generate a waiver request template for the borrower"""
-    borrower = MockERPConnector.BORROWER_PROFILE
+    borrower = MockERPConnector.get_profile(borrower_id)
     
     covenant = next(
         (c for c in CovenantEngine.STANDARD_COVENANTS if c.covenant_id == breach.covenant_id),
@@ -136,9 +141,9 @@ def generate_waiver_template(breach: CovenantTest):
     )
 
 @app.get("/alerts/active")
-def get_active_alerts():
+def get_active_alerts(borrower_id: str = "BOR_SOLARIS_001"):
     """Get all active covenant breach alerts"""
-    latest_metrics = MockERPConnector.get_latest_metrics()
+    latest_metrics = MockERPConnector.get_latest_metrics(borrower_id)
     results = CovenantEngine.test_all_covenants(latest_metrics)
     
     breaches = [r for r in results if r.status == CovenantStatus.BREACH]
@@ -156,6 +161,62 @@ def get_financial_forecast(months: int = 3):
     """Get financial forecast using PerforatedAI augmented model"""
     latest = MockERPConnector.get_latest_metrics()
     return forecaster.predict_next_months(latest, months)
+
+@app.post("/financial/simulate", response_model=SimulationResult)
+def simulate_financials(params: SimulationParams):
+    """Simulate financial stress scenarios"""
+    # 1. Get Base Data
+    base = MockERPConnector.get_latest_metrics()
+    
+    # Ensure base is a dict if it isn't already (MockERP usually returns dicts)
+    if not isinstance(base, dict):
+        base = base.dict()
+        
+    # 2. Calculate Stressed Metrics
+    # Revenue Change
+    rev_change_factor = 1 + (params.revenue_change_pct / 100.0)
+    new_revenue = base['revenue'] * rev_change_factor
+    
+    # Maintain EBITDA Margin
+    margin = base['ebitda'] / base['revenue'] if base['revenue'] else 0
+    new_ebitda = new_revenue * margin
+    
+    # Interest Rate Shock
+    # Calculate implied current rate
+    current_debt = base['total_debt']
+    current_interest_annual = base['interest_expense'] * 12 # Interest is usually monthly in these metrics? 
+    # Let's check MockERP. usually metrics are LTM or Annualized?
+    # Covenant tests usually use LTM. Let's assume the metric provided is the relevant period value.
+    # If interest_expense is satisfying Interest Cover (EBITDA/Int ~ 4x), then they are same period.
+    # Simple logic: New Interest = Old Interest + (Debt * DeltaRate)
+    # Rate is Annual. Metric period is unknown. 
+    # Modification: New Interest = Old Interest + (Debt * (bps/10000) * (PeriodAdjustment))
+    # Let's assume metrics are Annualized for simplicity in simulation.
+    
+    interest_increase = current_debt * (params.interest_rate_change_bps / 10000.0)
+    new_interest = base['interest_expense'] + interest_increase
+    
+    # Create Stressed Object
+    stressed_data = base.copy()
+    stressed_data.update({
+        "revenue": new_revenue,
+        "ebitda": new_ebitda,
+        "interest_expense": new_interest,
+        # Simplify cash flow impact
+        "cash_flow": base['cash_flow'] * rev_change_factor - (interest_increase) 
+    })
+    
+    stressed_metric = FinancialMetric(**stressed_data)
+    base_metric = FinancialMetric(**base)
+    
+    # 3. Test Covenants on Stressed Data
+    results = CovenantEngine.test_all_covenants(stressed_metric)
+    
+    return SimulationResult(
+        base_metrics=base_metric,
+        stressed_metrics=stressed_metric,
+        covenant_results=results
+    )
 
 if __name__ == "__main__":
     import uvicorn

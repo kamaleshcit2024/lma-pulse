@@ -45,3 +45,10 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# SQLite
+*.db
+
+# Forecast Artifacts
+forecast_run_*/
+PAI/
